@@ -24,8 +24,6 @@ public class PlayerMouvement : MonoBehaviour
                 if(hit.collider.CompareTag("Ground"))
                 {
                     GetComponent<NavMeshAgent>().destination = hit.point;
-                    byte[] message = { 0, 0, 0, 25 };
-                    SteamManager.Instance.SendMessageToSocketServer(message);
                 }
             }
         }

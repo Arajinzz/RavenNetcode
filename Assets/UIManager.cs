@@ -7,30 +7,18 @@ public class UIManager : MonoBehaviour
 {
     public async void HostGame()
     {
-        Debug.Log("Hosting a game ...");
-
-        await SteamManager.Instance.CreateLobby(0);
-
+        await SteamLobbyManager.Instance.CreateLobby(2, "JustTesting");
     }
 
     public async void JoinGame()
     {
-        Debug.Log("Joining a game");
+        await SteamLobbyManager.Instance.SearchLobbies("JustTesting");
 
-        await SteamManager.Instance.RefreshMultiplayerLobbies();
-        List<Lobby> Lobbies = SteamManager.Instance.LobbiesList;
+        List<Lobby> lobbiesFound = SteamLobbyManager.Instance.LobbiesResult;
 
-        if(Lobbies.Count < 1)
+        if(lobbiesFound != null && lobbiesFound.Count > 0)
         {
-            Debug.Log("Ooops no Lobbies");
-            return;
+            await SteamLobbyManager.Instance.JoinLobby(lobbiesFound[0]);
         }
-        foreach(Lobby lobby in Lobbies)
-        {
-            Debug.Log(lobby.Owner.ToString());
-        }
-
-        await SteamManager.Instance.JoinLobby(Lobbies[0]);
-
     }
 }
