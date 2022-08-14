@@ -1,12 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Steamworks;
 using Steamworks.Data;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class SteamManager : MonoBehaviour
 {
@@ -37,12 +32,12 @@ public class SteamManager : MonoBehaviour
                 PlayerName = SteamClient.Name;
                 PlayerSteamId = SteamClient.SteamId;
 
+                // Because we're using the relay network
                 SteamNetworkingUtils.InitRelayNetworkAccess();
-
             } catch (Exception e)
             {
                 QuickLog.Instance.Log("Error connecting to steam");
-                QuickLog.Instance.Log(e);
+                Debug.Log(e);
             }
 
         } else if (Instance != this)
@@ -91,10 +86,4 @@ public class SteamManager : MonoBehaviour
     {
         SteamClient.Shutdown();
     }
-
-    void OnDisable()
-    {
-        GameCleanup();
-    }
-
 }

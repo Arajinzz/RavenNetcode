@@ -5,6 +5,19 @@ using System.Threading.Tasks;
 using Steamworks;
 using Steamworks.Data;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class SteamPlayerObject
+{
+    public string PlayerName = "";
+    public GameObject ProfileUI = null;
+
+    public SteamPlayerObject(string name, GameObject obj)
+    {
+        PlayerName = name;
+        ProfileUI = obj;
+    }
+}
 
 public class SteamLobbyManager : MonoBehaviour
 {
@@ -13,17 +26,10 @@ public class SteamLobbyManager : MonoBehaviour
     // Lobby currently joined
     public Lobby CurrentLobby { get; set; }
 
-    public Dictionary<SteamId, GameObject> PlayersInLobby { get; set; }
+    public Dictionary<SteamId, SteamPlayerObject> PlayersInLobby { get; set; }
 
     // Here resides the lobby search result
     public List<Lobby> LobbiesResult;
-
-    [SerializeField]
-    GameObject LobbyUI;
-    [SerializeField]
-    GameObject PlayerProfileUI;
-    [SerializeField]
-    GameObject PlayerListUI;
 
     private void Awake()
     {
@@ -32,7 +38,7 @@ public class SteamLobbyManager : MonoBehaviour
         {
             DontDestroyOnLoad(this);
             Instance = this;
-            PlayersInLobby = new Dictionary<SteamId, GameObject>();
+            PlayersInLobby = new Dictionary<SteamId, SteamPlayerObject>();
             LobbiesResult = new List<Lobby>();
         } else if (Instance != this)
         {
@@ -52,11 +58,7 @@ public class SteamLobbyManager : MonoBehaviour
         SteamMatchmaking.OnLobbyInvite += OnLobbyInviteCallback;
         SteamMatchmaking.OnLobbyGameCreated += OnLobbyGameCreatedCallback;
         SteamMatchmaking.OnChatMessage += OnChatMessageCallback;
-    }
-
-    private void OnDisable()
-    {
-        CleanUp();
+        SceneManager.sceneLoaded += OnSceneLoadedCallback;
     }
 
     private void OnApplicationQuit()
@@ -76,9 +78,10 @@ public class SteamLobbyManager : MonoBehaviour
         SteamMatchmaking.OnLobbyInvite -= OnLobbyInviteCallback;
         SteamMatchmaking.OnLobbyGameCreated -= OnLobbyGameCreatedCallback;
         SteamMatchmaking.OnChatMessage -= OnChatMessageCallback;
+        SceneManager.sceneLoaded -= OnSceneLoadedCallback;
     }
 
-    private static async Task<Image?> GetAvatar(SteamId id)
+    public static async Task<Image?> GetAvatar(SteamId id)
     {
         try
         {
@@ -88,7 +91,7 @@ public class SteamLobbyManager : MonoBehaviour
         catch (System.Exception e)
         {
             // If something goes wrong, log it
-            QuickLog.Instance.Log(e);
+            Debug.Log(e);
             return null;
         }
     }
@@ -115,6 +118,7 @@ public class SteamLobbyManager : MonoBehaviour
         return avatar;
     }
 
+    // Will fil PlayerInLobby list with players that are connected to the lobby
     private void PopulatePlayerList(Lobby lobby)
     {
         CleanPlayerList();
@@ -129,6 +133,7 @@ public class SteamLobbyManager : MonoBehaviour
         }
     }
 
+    // Clean PlayersInLobby list this will probably get executed when we leave the lobby
     private void CleanPlayerList()
     {
         if(PlayersInLobby != null && PlayersInLobby.Count > 0)
@@ -141,30 +146,34 @@ public class SteamLobbyManager : MonoBehaviour
         }
     }
 
-    private async void AddPlayerToList(SteamId id, string name)
+    // Add a player to PlayersInLobby
+    private void AddPlayerToList(SteamId id, string name)
     {
         if (PlayersInLobby.ContainsKey(id)) {
             return;
         }
         
-        Image? avatar = await GetAvatar(id);
-        Texture2D image = Covert(avatar.Value);
-        
-        GameObject obj = Instantiate(PlayerProfileUI, PlayerListUI.transform);
-        obj.GetComponentInChildren<UnityEngine.UI.RawImage>().texture = image;
-        obj.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = name;
-
-        PlayersInLobby.Add(id, obj);
+        // ProfileUI is set to null
+        // Object Instantiation will be done in LobbyScene
+        // Precisely in the LobbyUIManager
+        PlayersInLobby.Add(id, new SteamPlayerObject(name, null));
     }
 
+    // Remove a player from PlayersInLobby
+    // And destroy its UI
     private void RemovePlayerFromList(SteamId id)
     {
         if(!PlayersInLobby.ContainsKey(id))
         {
             return;
         }
-        GameObject obj = PlayersInLobby[id];
-        Destroy(obj);
+
+        if(PlayersInLobby[id].ProfileUI == null)
+        {
+            return;
+        }
+
+        Destroy(PlayersInLobby[id].ProfileUI);
         PlayersInLobby.Remove(id);
     }
 
@@ -193,7 +202,7 @@ public class SteamLobbyManager : MonoBehaviour
         } catch (System.Exception e)
         {
             QuickLog.Instance.Log("Failed to create Lobby");
-            QuickLog.Instance.Log(e);
+            Debug.Log(e);
         }
 
         return false;
@@ -224,8 +233,8 @@ public class SteamLobbyManager : MonoBehaviour
         }
 
         // Left Successfully
-        CleanPlayerList();
-        LobbyUI.SetActive(false);
+        // Load the desired scene
+        SceneManager.LoadScene(0);
     }
 
     public async Task<bool> SearchLobbies(string gameName)
@@ -248,7 +257,7 @@ public class SteamLobbyManager : MonoBehaviour
         catch (System.Exception e)
         {
             QuickLog.Instance.Log("Error fetching multiplayer lobbies");
-            QuickLog.Instance.Log(e);
+            Debug.Log(e);
         }
         
         return false;
@@ -258,6 +267,7 @@ public class SteamLobbyManager : MonoBehaviour
 
     #region Callbacks
 
+    // Executed when a lobby is created
     private void OnLobbyCreatedCallback(Result result, Lobby lobby)
     {
         QuickLog.Instance.Log("OnLobbyCreated Callback");
@@ -267,6 +277,8 @@ public class SteamLobbyManager : MonoBehaviour
         }
     }
 
+    // Executed only when a member Disconnected
+    // Which means when i get Disconnected it will not get executed 
     private void OnLobbyMemberDisconnectedCallback(Lobby lobby, Friend member)
     {
         QuickLog.Instance.Log("OnLobbyMemberDisconnected Callback");
@@ -274,26 +286,34 @@ public class SteamLobbyManager : MonoBehaviour
         RemovePlayerFromList(member.Id);
     }
 
+    // Executed only when a member leaves
+    // Which means when i leave it will not get executed 
     private void OnLobbyMemberLeaveCallback(Lobby lobby, Friend member)
     {
         QuickLog.Instance.Log("OnLobbyMemberLeave Callback");
+        // The idea is when a member leaves the lobby
+        // All users in lobby will execute this
         SteamManager.Instance.CloseP2P(member.Id);
         RemovePlayerFromList(member.Id);
     }
 
+    // Executed when a member joins the lobby
     private void OnLobbyMemberJoinedCallback(Lobby lobby, Friend member)
     {
         QuickLog.Instance.Log("OnLobbyMemberJoined Callback");
+        // The idea is when a member joins a lobby
+        // All users in lobby will execute this
         SteamManager.Instance.AcceptP2P(member.Id);
         AddPlayerToList(member.Id, member.Name);
     }
 
+    // Executed when we enter the lobby
     private void OnLobbyEnteredCallback(Lobby lobby)
     {
         QuickLog.Instance.Log("OnLobbyEntered Callback");
         CurrentLobby = lobby;
-        PopulatePlayerList(lobby);
-        LobbyUI.SetActive(true);
+        // Load lobby scene
+        SceneManager.LoadScene(1);
     }
 
     private void OnLobbyInviteCallback(Friend member, Lobby lobby)
@@ -306,10 +326,26 @@ public class SteamLobbyManager : MonoBehaviour
 
     }
 
+    // Executed when we receive a chat message
     private void OnChatMessageCallback(Lobby lobby, Friend friend, string message)
     {
         // Received chat message
         QuickLog.Instance.Log($"{friend.Name}: {message}");
+    }
+
+    // Executed when a scene is loaded
+    private void OnSceneLoadedCallback(Scene scene, LoadSceneMode loadSceneMode)
+    {
+        // Lobby Scene
+        if (scene.buildIndex == 1)
+        {
+            // When lobby scene is loaded
+            // Load players that are in the scene
+            PopulatePlayerList(CurrentLobby);
+        } else // if Any scene else we clean Playerlist
+        {
+            CleanPlayerList();
+        }
     }
 
     #endregion
