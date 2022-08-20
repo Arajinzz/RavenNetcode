@@ -14,15 +14,10 @@ public class LobbyUIManager : MonoBehaviour
 
     private Dictionary<SteamId, SteamPlayerObject> Players;
 
-    private void Start()
-    {
-        // Get Players in lobby
-        Players = SteamLobbyManager.Instance.PlayersInLobby;
-    }
-
     private void Update()
     {
-        
+        Players = SteamLobbyManager.Instance.PlayersInLobby;
+
         if (Players != null)
         {
             foreach (SteamId id in Players.Keys)
@@ -50,6 +45,12 @@ public class LobbyUIManager : MonoBehaviour
     {
         Debug.Log("Leaving Lobby ...");
         SteamLobbyManager.Instance.LeaveLobby();
+    }
+
+    public void StartGame()
+    {
+        Debug.Log("Starting Game ...");
+        SteamLobbyManager.Instance.CurrentLobby.SetGameServer(SteamManager.Instance.PlayerSteamId);
     }
 
     public void SendMessageToLobby()

@@ -5,29 +5,28 @@ using UnityEngine.AI;
 
 public class PlayerMouvement : MonoBehaviour
 {
+    InputManager InputController;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        InputController = GetComponent<InputManager>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
 
-            if(Physics.Raycast(ray, out hit, Mathf.Infinity))
-            {
-                if(hit.collider.CompareTag("Ground"))
-                {
-                    GetComponent<NavMeshAgent>().destination = hit.point;
-                }
-            }
-        }
+    }
 
+    public void Move(Vector3 hitPoint)
+    {
+        GetComponent<NavMeshAgent>().destination = hitPoint;
+    }
+
+    public void NetMove()
+    {
         
     }
+
 }

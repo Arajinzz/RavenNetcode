@@ -34,6 +34,7 @@ public class SteamManager : MonoBehaviour
 
                 // Because we're using the relay network
                 SteamNetworkingUtils.InitRelayNetworkAccess();
+                SteamNetworking.AllowP2PPacketRelay(true);
             } catch (Exception e)
             {
                 QuickLog.Instance.Log("Error connecting to steam");
@@ -61,7 +62,8 @@ public class SteamManager : MonoBehaviour
         try
         {
             // For two players to send P2P packets to each other, they each must call this on the other player
-            SteamNetworking.AcceptP2PSessionWithUser(user);
+            bool success = SteamNetworking.AcceptP2PSessionWithUser(user);
+            if (success) Debug.Log("P2P session accepted with " + user.ToString());
         }
         catch
         {

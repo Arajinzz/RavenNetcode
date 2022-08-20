@@ -31,6 +31,9 @@ public class SteamLobbyManager : MonoBehaviour
     // Here resides the lobby search result
     public List<Lobby> LobbiesResult;
 
+    // The player who is hosting the game
+    public SteamId HostPlayerId;
+
     private void Awake()
     {
 
@@ -40,6 +43,7 @@ public class SteamLobbyManager : MonoBehaviour
             Instance = this;
             PlayersInLobby = new Dictionary<SteamId, SteamPlayerObject>();
             LobbiesResult = new List<Lobby>();
+            HostPlayerId = 0;
         } else if (Instance != this)
         {
             Destroy(gameObject);
@@ -58,6 +62,7 @@ public class SteamLobbyManager : MonoBehaviour
         SteamMatchmaking.OnLobbyInvite += OnLobbyInviteCallback;
         SteamMatchmaking.OnLobbyGameCreated += OnLobbyGameCreatedCallback;
         SteamMatchmaking.OnChatMessage += OnChatMessageCallback;
+        SteamNetworking.OnP2PSessionRequest += OnP2PSessionRequestCallback;
         SceneManager.sceneLoaded += OnSceneLoadedCallback;
     }
 
@@ -78,6 +83,7 @@ public class SteamLobbyManager : MonoBehaviour
         SteamMatchmaking.OnLobbyInvite -= OnLobbyInviteCallback;
         SteamMatchmaking.OnLobbyGameCreated -= OnLobbyGameCreatedCallback;
         SteamMatchmaking.OnChatMessage -= OnChatMessageCallback;
+        SteamNetworking.OnP2PSessionRequest -= OnP2PSessionRequestCallback;
         SceneManager.sceneLoaded -= OnSceneLoadedCallback;
     }
 
@@ -295,6 +301,7 @@ public class SteamLobbyManager : MonoBehaviour
         // All users in lobby will execute this
         SteamManager.Instance.CloseP2P(member.Id);
         RemovePlayerFromList(member.Id);
+        Debug.Log("The owner is : " + CurrentLobby.Owner.Id);
     }
 
     // Executed when a member joins the lobby
@@ -312,6 +319,7 @@ public class SteamLobbyManager : MonoBehaviour
     {
         QuickLog.Instance.Log("OnLobbyEntered Callback");
         CurrentLobby = lobby;
+
         // Load lobby scene
         SceneManager.LoadScene(1);
     }
@@ -321,9 +329,14 @@ public class SteamLobbyManager : MonoBehaviour
 
     }
 
+    // When Game is started
     private void OnLobbyGameCreatedCallback(Lobby lobby, uint ip, ushort port, SteamId gameServerId)
     {
+        Debug.Log("Game is Started by: " + gameServerId.ToString());
+        HostPlayerId = gameServerId;
 
+        // Load game scene
+        SceneManager.LoadScene(2);
     }
 
     // Executed when we receive a chat message
@@ -331,6 +344,12 @@ public class SteamLobbyManager : MonoBehaviour
     {
         // Received chat message
         QuickLog.Instance.Log($"{friend.Name}: {message}");
+    }
+
+    private void OnP2PSessionRequestCallback(SteamId user)
+    {
+        Debug.Log("P2P Request from " + user.ToString());
+        SteamManager.Instance.AcceptP2P(user);
     }
 
     // Executed when a scene is loaded
@@ -342,7 +361,14 @@ public class SteamLobbyManager : MonoBehaviour
             // When lobby scene is loaded
             // Load players that are in the scene
             PopulatePlayerList(CurrentLobby);
-        } else // if Any scene else we clean Playerlist
+        } else if (scene.buildIndex == 2)
+        {
+            CleanPlayerList();
+            // Instantiate Players
+            var packet = P2PPacket.Compose_InstantiatePlayerPacket();
+            P2PNetworkSend.SendToAllLobby(CurrentLobby, packet);
+        } 
+        else // if Any scene else we clean Playerlist
         {
             CleanPlayerList();
         }
