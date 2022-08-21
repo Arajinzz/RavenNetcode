@@ -280,6 +280,7 @@ public class SteamLobbyManager : MonoBehaviour
         if (result == Result.OK)
         {
             CurrentLobby = lobby;
+            CurrentLobby.SetData("GameState", "Waiting");
         }
     }
 
@@ -302,6 +303,9 @@ public class SteamLobbyManager : MonoBehaviour
         SteamManager.Instance.CloseP2P(member.Id);
         RemovePlayerFromList(member.Id);
         Debug.Log("The owner is : " + CurrentLobby.Owner.Id);
+
+        if(P2PNetworkReceive.Instance.Players.ContainsKey(member.Id))
+            Destroy(P2PNetworkReceive.Instance.Players[member.Id]);
     }
 
     // Executed when a member joins the lobby
@@ -312,6 +316,13 @@ public class SteamLobbyManager : MonoBehaviour
         // All users in lobby will execute this
         SteamManager.Instance.AcceptP2P(member.Id);
         AddPlayerToList(member.Id, member.Name);
+
+        if (CurrentLobby.GetData("GameState").Equals("Started"))
+        {
+            // Send my player to newly joined member
+            var packet = P2PPacket.Compose_InstantiatePlayerAtPositionPacket();
+            P2PNetworkSend.SendToTarget(member.Id, packet);
+        }
     }
 
     // Executed when we enter the lobby
@@ -320,8 +331,15 @@ public class SteamLobbyManager : MonoBehaviour
         QuickLog.Instance.Log("OnLobbyEntered Callback");
         CurrentLobby = lobby;
 
-        // Load lobby scene
-        SceneManager.LoadScene(1);
+        if(CurrentLobby.GetData("GameState").Equals("Started"))
+        {
+            // Means game started
+            SceneManager.LoadScene(2);
+        } else
+        {
+            // Load lobby scene
+            SceneManager.LoadScene(1);
+        }
     }
 
     private void OnLobbyInviteCallback(Friend member, Lobby lobby)
@@ -334,6 +352,8 @@ public class SteamLobbyManager : MonoBehaviour
     {
         Debug.Log("Game is Started by: " + gameServerId.ToString());
         HostPlayerId = gameServerId;
+
+        CurrentLobby.SetData("GameState", "Started");
 
         // Load game scene
         SceneManager.LoadScene(2);

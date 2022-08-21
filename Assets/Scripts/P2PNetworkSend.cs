@@ -14,12 +14,7 @@ public class P2PNetworkSend : MonoBehaviour
         //    P2PNetworkReceive.Instance.HandlePacket(target, data);
         //    return;
         //}
-        Debug.Log("Sending data to: " + target.ToString());
         bool sent = SteamNetworking.SendP2PPacket(target, data);
-        if (!sent)
-        {
-            Debug.Log("Packet to send to " + target.ToString() + " is dropped");
-        }
     }
 
     public static void SendToAllLobby(Lobby lobby, byte[] data)

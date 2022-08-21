@@ -12,7 +12,7 @@ public class P2PNetworkReceive : MonoBehaviour
     [SerializeField]
     GameObject player;
 
-    Dictionary<SteamId, GameObject> Players;
+    public Dictionary<SteamId, GameObject> Players;
 
     private void Awake()
     {
@@ -36,11 +36,9 @@ public class P2PNetworkReceive : MonoBehaviour
     {
         while (SteamNetworking.IsP2PPacketAvailable())
         {
-            Debug.Log("A Packet is available");
             var packet = SteamNetworking.ReadP2PPacket();
             if (packet.HasValue)
             {
-                Debug.Log("Packet received from " + packet.Value.SteamId.ToString());
                 HandlePacket(packet.Value.SteamId, packet.Value.Data);
             }
         }
@@ -51,7 +49,6 @@ public class P2PNetworkReceive : MonoBehaviour
         if (packet == null)
             return;
 
-        Debug.Log("Handling the packet");
         // Handle Packet
         List<byte> bytes = new List<byte>(packet);
 
@@ -80,12 +77,42 @@ public class P2PNetworkReceive : MonoBehaviour
             Players[from].GetComponent<PlayerMouvement>().Move(hitPoint);
 
             Debug.Log(hitPoint);
+        } else if (packetType == 3)
+        {
+            // Player left
+            if (Players.ContainsKey(from)) {
+                Destroy(Players[from]);
+            }
+        } else if (packetType == 4)
+        {
+            float x = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+            float y = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+            float z = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+
+            Vector3 position = new Vector3(x, y, z);
+
+            x = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+            y = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+            z = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+            float w = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
+            offset += sizeof(float);
+
+            Quaternion rotation = new Quaternion(x, y, z, w);
+
+            Players[from] = InstantiatePlayer(from);
+            Players[from].transform.position = position;
+            Players[from].transform.rotation = rotation;
         }
     }
 
     private GameObject InstantiatePlayer(SteamId id)
     {
-        Debug.Log("Instantiating a player");
         GameObject playerObj = Instantiate(player, GameObject.Find("SpawnPoint").transform);
         Debug.Log(playerObj.transform);
 
