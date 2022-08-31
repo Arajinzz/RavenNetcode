@@ -21,6 +21,7 @@ public class FPSMouvements : MonoBehaviour
     public LayerMask GroundMask;
 
     private CharacterController Controller;
+    private InputManager inputManager;
 
     private Vector3 Velocity;
     private bool bGrounded;
@@ -29,6 +30,7 @@ public class FPSMouvements : MonoBehaviour
     void Start()
     {
         Controller = GetComponent<CharacterController>();
+        inputManager = GetComponent<InputManager>();
     }
 
     private void FixedUpdate()
@@ -44,18 +46,48 @@ public class FPSMouvements : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        HandleInput();
+
+        // Falling
+        Velocity.y += Gravity * Time.deltaTime;
+        Controller.Move(Velocity * Time.deltaTime);
+    }
+
+
+
+    private void Jump()
+    {
+        if (Input.GetButtonDown("Jump") && bGrounded)
+        {
+            Velocity.y = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+        }
+    }
+
+    private void HandleMouvement()
+    {
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
 
         Vector3 move = transform.right * x + transform.forward * z;
         Controller.Move(move * Speed * Time.deltaTime);
+    }
 
-        if (Input.GetButtonDown("Jump") && bGrounded)
+    void HandleInput()
+    {
+        if (!inputManager)
+            return;
+
+        if (inputManager.isKeyPressed(InputManager.Key.W) ||
+            inputManager.isKeyPressed(InputManager.Key.S) ||
+            inputManager.isKeyPressed(InputManager.Key.A) ||
+            inputManager.isKeyPressed(InputManager.Key.D))
         {
-            Velocity.y = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+            HandleMouvement();
         }
 
-        Velocity.y += Gravity * Time.deltaTime;
-        Controller.Move(Velocity * Time.deltaTime);
+        if (inputManager.isKeyPressed(InputManager.Key.SPACE))
+        {
+            Jump();
+        }
     }
 }
