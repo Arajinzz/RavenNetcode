@@ -1,10 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
 {
-    public enum Key
+    public enum Key : UInt32
     {
         None = 0,
         LeftMouseDown = 1,
@@ -17,16 +16,14 @@ public class InputManager : MonoBehaviour
     }
 
     public Key KeyPressed;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
+    public Key LastKeyPressed;
 
     // Update is called once per frame
     void Update()
     {
+
+        LastKeyPressed = KeyPressed;
+
         if (Input.GetMouseButtonDown(0))
         {
             KeyPressed |= Key.LeftMouseDown;
@@ -80,12 +77,27 @@ public class InputManager : MonoBehaviour
             KeyPressed &= ~Key.SPACE;
         }
 
-    }
+        if (KeyPressed == 0 && KeyPressed == LastKeyPressed)
+        {
 
+        } else
+        {
+            // Send Packet
+            P2PPacket packet = new P2PPacket(P2PPacket.PacketType.KeyEvent);
+            packet.InsertKeyPressed(KeyPressed);
+            P2PNetworkSend.SendToAllLobby(SteamLobbyManager.Instance.CurrentLobby, packet.buffer.ToArray());
+        }
+
+    }
 
     public bool isKeyPressed(Key key)
     {
         return (KeyPressed & key) != 0;
+    }
+
+    public static bool CompareKey(Key key1, Key key2)
+    {
+        return (key1 & key2) != 0;
     }
 
 }

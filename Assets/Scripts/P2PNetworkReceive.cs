@@ -50,61 +50,35 @@ public class P2PNetworkReceive : MonoBehaviour
             return;
 
         // Handle Packet
-        List<byte> bytes = new List<byte>(packet);
-
-        int offset = 0;
-        ushort packetType = BitConverter.ToUInt16(bytes.GetRange(offset, sizeof(ushort)).ToArray());
-        offset += sizeof(ushort);
+        P2PPacket data = new P2PPacket(packet);
+        P2PPacket.PacketType packetType = data.GetPacketType();
 
         // Instantiate Player
-        if (packetType == 0)
+        if (packetType == P2PPacket.PacketType.IntantiatePlayer)
         {
             Players[from] = InstantiatePlayer(from);
-        } else if (packetType == 1)
+        } else if (packetType == P2PPacket.PacketType.KeyEvent)
         {
-            // No key pressed do nothing
-        } else if (packetType == 2)
-        {
-            float x = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            float y = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            float z = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-
-            Vector3 hitPoint = new Vector3(x, y, z);
-
-            Players[from].GetComponent<PlayerMouvement>().Move(hitPoint);
-
-            Debug.Log(hitPoint);
-        } else if (packetType == 3)
+            // Simulate key
+            InputManager.Key KeyPressed = data.PopKeyPressed();
+            FPSMouvements Mouvements = Players[from].GetComponent<FPSMouvements>();
+            if (InputManager.CompareKey(KeyPressed, InputManager.Key.W) ||
+                InputManager.CompareKey(KeyPressed, InputManager.Key.S) ||
+                InputManager.CompareKey(KeyPressed, InputManager.Key.A) ||
+                InputManager.CompareKey(KeyPressed, InputManager.Key.D))
+            {
+                Mouvements.HandleMouvement();
+            }
+        } else if (packetType == P2PPacket.PacketType.PlayerLeft)
         {
             // Player left
             if (Players.ContainsKey(from)) {
                 Destroy(Players[from]);
             }
-        } else if (packetType == 4)
+        } else if (packetType == P2PPacket.PacketType.InstantiatePlayerAtPosition)
         {
-            float x = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            float y = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            float z = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-
-            Vector3 position = new Vector3(x, y, z);
-
-            x = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            y = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            z = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-            float w = BitConverter.ToSingle(bytes.GetRange(offset, sizeof(float)).ToArray());
-            offset += sizeof(float);
-
-            Quaternion rotation = new Quaternion(x, y, z, w);
-
+            Vector3 position = new Vector3(data.PopFloat(), data.PopFloat(), data.PopFloat());
+            Quaternion rotation = new Quaternion(data.PopFloat(), data.PopFloat(), data.PopFloat(), data.PopFloat());
             Players[from] = InstantiatePlayer(from);
             Players[from].transform.position = position;
             Players[from].transform.rotation = rotation;
@@ -114,8 +88,6 @@ public class P2PNetworkReceive : MonoBehaviour
     private GameObject InstantiatePlayer(SteamId id)
     {
         GameObject playerObj = Instantiate(player, GameObject.Find("SpawnPoint").transform);
-        Debug.Log(playerObj.transform);
-
         if (id == SteamManager.Instance.PlayerSteamId)
         {
             playerObj.AddComponent<InputManager>();

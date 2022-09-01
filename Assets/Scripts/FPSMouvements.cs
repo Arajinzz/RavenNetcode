@@ -53,17 +53,15 @@ public class FPSMouvements : MonoBehaviour
         Controller.Move(Velocity * Time.deltaTime);
     }
 
-
-
     private void Jump()
     {
-        if (Input.GetButtonDown("Jump") && bGrounded)
+        if (bGrounded)
         {
             Velocity.y = Mathf.Sqrt(JumpHeight * -2f * Gravity);
         }
     }
 
-    private void HandleMouvement()
+    public void HandleMouvement()
     {
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
@@ -77,17 +75,17 @@ public class FPSMouvements : MonoBehaviour
         if (!inputManager)
             return;
 
-        if (inputManager.isKeyPressed(InputManager.Key.W) ||
-            inputManager.isKeyPressed(InputManager.Key.S) ||
-            inputManager.isKeyPressed(InputManager.Key.A) ||
-            inputManager.isKeyPressed(InputManager.Key.D))
-        {
-            HandleMouvement();
-        }
+        //if (inputManager.isKeyPressed(InputManager.Key.W) ||
+        //    inputManager.isKeyPressed(InputManager.Key.S) ||
+        //    inputManager.isKeyPressed(InputManager.Key.A) ||
+        //    inputManager.isKeyPressed(InputManager.Key.D))
+        //{
+        //    HandleMouvement();
+        //}
 
-        if (inputManager.isKeyPressed(InputManager.Key.SPACE))
-        {
-            Jump();
-        }
+        //if (inputManager.isKeyPressed(InputManager.Key.SPACE))
+        //{
+        //    Jump();
+        //}
     }
 }

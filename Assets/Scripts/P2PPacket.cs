@@ -3,86 +3,74 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class P2PPacket : MonoBehaviour
+public class P2PPacket
 {
     
     public enum PacketType : ushort
     {
         IntantiatePlayer,
-        NoKeyPressed,
-        LeftMouseButtonPressed,
-        PlayerLeft,
         InstantiatePlayerAtPosition,
+        KeyEvent,
+        PlayerLeft,
     }
 
-    public static byte[] Compose_InstantiatePlayerPacket()
+    public UInt16 packetType;
+    public List<byte> buffer;
+    public int offset;
+
+    public P2PPacket(PacketType type)
     {
-        List<byte> buffer = new List<byte>();
-        ushort packetType = Convert.ToUInt16(PacketType.IntantiatePlayer);
+        packetType = Convert.ToUInt16(type);
+        buffer = new List<byte>();
         buffer.AddRange(BitConverter.GetBytes(packetType));
-        // Maybe add position
-
-        return buffer.ToArray();
     }
 
-    public static void Decompose_InstantiatePlayerPacket(byte[] data)
+    public P2PPacket(byte[] data)
     {
-
+        buffer = new List<byte>(data);
+        packetType = BitConverter.ToUInt16(buffer.GetRange(offset, sizeof(ushort)).ToArray());
+        offset += sizeof(ushort);
     }
 
-    public static byte[] Compose_LeftMouseButtonPressedPacket(Vector3 hitPoint)
+    public PacketType GetPacketType()
     {
-        List<byte> buffer = new List<byte>();
-        ushort packetType = Convert.ToUInt16(PacketType.LeftMouseButtonPressed);
-        buffer.AddRange(BitConverter.GetBytes(packetType));
-        buffer.AddRange(BitConverter.GetBytes(hitPoint.x));
-        buffer.AddRange(BitConverter.GetBytes(hitPoint.y));
-        buffer.AddRange(BitConverter.GetBytes(hitPoint.z));
-        // Maybe add position
-
-        return buffer.ToArray();
+        return (PacketType)packetType;
     }
 
-    public static byte[] Compose_NoKeyPressedPacket()
+    public void InsertUInt32(UInt32 data)
     {
-        List<byte> buffer = new List<byte>();
-        ushort packetType = Convert.ToUInt16(PacketType.NoKeyPressed);
-        buffer.AddRange(BitConverter.GetBytes(packetType));
-        // Maybe add position
-
-        return buffer.ToArray();
+        buffer.AddRange(BitConverter.GetBytes(data));
     }
 
-    public static byte[] Compose_PlayerLeftPacket()
+    public UInt32 PopUInt32()
     {
-        List<byte> buffer = new List<byte>();
-        ushort packetType = Convert.ToUInt16(PacketType.PlayerLeft);
-        buffer.AddRange(BitConverter.GetBytes(packetType));
-        // Maybe add position
-
-        return buffer.ToArray();
+        UInt32 data = BitConverter.ToUInt32(buffer.GetRange(offset, sizeof(UInt32)).ToArray());
+        offset += sizeof(UInt32);
+        return data;
     }
 
-    public static byte[] Compose_InstantiatePlayerAtPositionPacket()
+    public void InsertFloat(float data)
     {
-        GameObject Player = P2PNetworkReceive.Instance.Players[SteamManager.Instance.PlayerSteamId];
-        Vector3 position = Player.transform.position;
-        Quaternion rotation = Player.transform.rotation;
+        buffer.AddRange(BitConverter.GetBytes(data));
+    }
 
-        List<byte> buffer = new List<byte>();
-        ushort packetType = Convert.ToUInt16(PacketType.InstantiatePlayerAtPosition);
-        buffer.AddRange(BitConverter.GetBytes(packetType));
-        buffer.AddRange(BitConverter.GetBytes(position.x));
-        buffer.AddRange(BitConverter.GetBytes(position.y));
-        buffer.AddRange(BitConverter.GetBytes(position.z));
+    public float PopFloat()
+    {
+        float data = BitConverter.ToSingle(buffer.GetRange(offset, sizeof(float)).ToArray());
+        offset += sizeof(float);
+        return data;
+    }
 
-        buffer.AddRange(BitConverter.GetBytes(rotation.x));
-        buffer.AddRange(BitConverter.GetBytes(rotation.y));
-        buffer.AddRange(BitConverter.GetBytes(rotation.z));
-        buffer.AddRange(BitConverter.GetBytes(rotation.w));
-        // Maybe add position
+    public void InsertKeyPressed(InputManager.Key keyPressed)
+    {
+        UInt32 key = Convert.ToUInt32(keyPressed);
+        InsertUInt32(key);
+    }
 
-        return buffer.ToArray();
+    public InputManager.Key PopKeyPressed()
+    {
+        UInt32 key = PopUInt32();
+        return (InputManager.Key)key;
     }
 
 }

@@ -320,8 +320,21 @@ public class SteamLobbyManager : MonoBehaviour
         if (CurrentLobby.GetData("GameState").Equals("Started"))
         {
             // Send my player to newly joined member
-            var packet = P2PPacket.Compose_InstantiatePlayerAtPositionPacket();
-            P2PNetworkSend.SendToTarget(member.Id, packet);
+            GameObject player = P2PNetworkReceive.Instance.Players[SteamManager.Instance.PlayerSteamId];
+            Vector3 position = player.transform.position;
+            Quaternion rotation = player.transform.rotation;
+            var packet = new P2PPacket(P2PPacket.PacketType.InstantiatePlayerAtPosition);
+
+            packet.InsertFloat(position.x);
+            packet.InsertFloat(position.y);
+            packet.InsertFloat(position.z);
+
+            packet.InsertFloat(rotation.x);
+            packet.InsertFloat(rotation.y);
+            packet.InsertFloat(rotation.z);
+            packet.InsertFloat(rotation.w);
+
+            P2PNetworkSend.SendToTarget(member.Id, packet.buffer.ToArray());
         }
     }
 
@@ -385,8 +398,8 @@ public class SteamLobbyManager : MonoBehaviour
         {
             CleanPlayerList();
             // Instantiate Players
-            var packet = P2PPacket.Compose_InstantiatePlayerPacket();
-            P2PNetworkSend.SendToAllLobby(CurrentLobby, packet);
+            var packet = new P2PPacket(P2PPacket.PacketType.IntantiatePlayer);
+            P2PNetworkSend.SendToAllLobby(CurrentLobby, packet.buffer.ToArray());
         } 
         else // if Any scene else we clean Playerlist
         {
