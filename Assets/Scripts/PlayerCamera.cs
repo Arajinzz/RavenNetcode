@@ -28,6 +28,11 @@ public class PlayerCamera : MonoBehaviour
         xRotation = Mathf.Clamp(xRotation, -15f, 15f);
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        PlayerBody.Rotate(Vector3.up * mouseX);
+        if (Mathf.Abs(mouseX) > 0.01)
+        {
+            P2PPacket packet = new P2PPacket(P2PPacket.PacketType.PlayerRotated);
+            packet.InsertFloat(mouseX);
+            P2PNetworkSend.SendToAllLobby(SteamLobbyManager.Instance.CurrentLobby, packet.buffer.ToArray());
+        }
     }
 }

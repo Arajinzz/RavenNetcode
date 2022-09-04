@@ -12,6 +12,7 @@ public class P2PPacket
         InstantiatePlayerAtPosition,
         KeyEvent,
         PlayerLeft,
+        PlayerRotated,
     }
 
     public UInt16 packetType;

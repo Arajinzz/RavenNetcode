@@ -99,7 +99,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &970212095413156360
 Transform:
   m_ObjectHideFlags: 0
@@ -371,7 +371,6 @@ GameObject:
   - component: {fileID: 970212096593497057}
   - component: {fileID: 970212096593497056}
   - component: {fileID: 970212096593497058}
-  - component: {fileID: 970212096593497059}
   m_Layer: 0
   m_Name: FPSPlayer
   m_TagString: Untagged
@@ -432,24 +431,13 @@ MonoBehaviour:
   Gravity: -9.81
   JumpHeight: 3
   GroundDistance: 0.4
+  PlayerCamera: {fileID: 970212095413156365}
+  PlayerBody: {fileID: 970212096593497057}
   GroundCheck: {fileID: 970212095009184881}
   GroundMask:
     serializedVersion: 2
     m_Bits: 64
---- !u!114 &970212096593497059
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 970212096593497063}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b49527a7c47587f4a90d58654b1dc426, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  KeyPressed: 0
-  LastKeyPressed: 0
+  keyPressed: 0
 --- !u!1 &970212096786904077
 GameObject:
   m_ObjectHideFlags: 0

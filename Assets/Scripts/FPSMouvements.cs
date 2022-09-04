@@ -17,11 +17,18 @@ public class FPSMouvements : MonoBehaviour
     [SerializeField]
     float GroundDistance = 0.4f;
 
+    [SerializeField]
+    GameObject PlayerCamera;
+
+    [SerializeField]
+    Transform PlayerBody;
+
     public Transform GroundCheck;
     public LayerMask GroundMask;
 
     private CharacterController Controller;
     private InputManager inputManager;
+    public InputManager.Key keyPressed;
 
     private Vector3 Velocity;
     private bool bGrounded;
@@ -31,6 +38,11 @@ public class FPSMouvements : MonoBehaviour
     {
         Controller = GetComponent<CharacterController>();
         inputManager = GetComponent<InputManager>();
+
+        if (inputManager)
+        {
+            PlayerCamera.SetActive(true);
+        }
     }
 
     private void FixedUpdate()
@@ -46,7 +58,9 @@ public class FPSMouvements : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        HandleInput();
+        //HandleInput();
+        HandleMouvement();
+        Jump();
 
         // Falling
         Velocity.y += Gravity * Time.deltaTime;
@@ -55,7 +69,7 @@ public class FPSMouvements : MonoBehaviour
 
     private void Jump()
     {
-        if (bGrounded)
+        if (InputManager.CompareKey(keyPressed, InputManager.Key.SPACE) && bGrounded)
         {
             Velocity.y = Mathf.Sqrt(JumpHeight * -2f * Gravity);
         }
@@ -63,11 +77,36 @@ public class FPSMouvements : MonoBehaviour
 
     public void HandleMouvement()
     {
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
+        float x = 0;
+        float z = 0;
+
+        if (InputManager.CompareKey(keyPressed, InputManager.Key.W))
+        {
+            z += 1;
+        }
+
+        if (InputManager.CompareKey(keyPressed, InputManager.Key.S))
+        {
+            z += -1;
+        }
+
+        if (InputManager.CompareKey(keyPressed, InputManager.Key.A))
+        {
+            x += -1;
+        }
+
+        if (InputManager.CompareKey(keyPressed, InputManager.Key.D))
+        {
+            x += 1;
+        }
 
         Vector3 move = transform.right * x + transform.forward * z;
         Controller.Move(move * Speed * Time.deltaTime);
+    }
+
+    public void RotatePlayer(float mouseX)
+    {
+        PlayerBody.Rotate(Vector3.up * mouseX);
     }
 
     void HandleInput()
@@ -87,5 +126,10 @@ public class FPSMouvements : MonoBehaviour
         //{
         //    Jump();
         //}
+    }
+
+    public void SetKeyPressed(InputManager.Key keyPressed)
+    {
+        this.keyPressed = keyPressed;
     }
 }

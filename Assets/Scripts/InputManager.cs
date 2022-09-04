@@ -17,17 +17,28 @@ public class InputManager : MonoBehaviour
 
     public Key KeyPressed;
     public Key LastKeyPressed;
+    bool stopSendingKeys = false;
 
     // Update is called once per frame
     void Update()
     {
+        int tick = 0;
+        if (GameManager.Instance)
+        {
+            tick = GameManager.Instance.currentTick;
+        }
+        HandleTick(tick);
+    }
 
+    private void HandleTick(int tick)
+    {
         LastKeyPressed = KeyPressed;
 
         if (Input.GetMouseButtonDown(0))
         {
             KeyPressed |= Key.LeftMouseDown;
-        } else if (Input.GetMouseButtonUp(0))
+        }
+        else if (Input.GetMouseButtonUp(0))
         {
             KeyPressed &= ~Key.LeftMouseDown;
         }
@@ -77,17 +88,30 @@ public class InputManager : MonoBehaviour
             KeyPressed &= ~Key.SPACE;
         }
 
-        if (KeyPressed == 0 && KeyPressed == LastKeyPressed)
-        {
-
-        } else
+        if (KeyPressed == 0 && !stopSendingKeys)
         {
             // Send Packet
             P2PPacket packet = new P2PPacket(P2PPacket.PacketType.KeyEvent);
+            packet.InsertUInt32((UInt32)tick % 60);
             packet.InsertKeyPressed(KeyPressed);
             P2PNetworkSend.SendToAllLobby(SteamLobbyManager.Instance.CurrentLobby, packet.buffer.ToArray());
+            stopSendingKeys = true;
         }
+        else
+        {
+            // Send Packet
+            P2PPacket packet = new P2PPacket(P2PPacket.PacketType.KeyEvent);
+            packet.InsertUInt32((UInt32)tick % 60);
+            packet.InsertKeyPressed(KeyPressed);
+            P2PNetworkSend.SendToAllLobby(SteamLobbyManager.Instance.CurrentLobby, packet.buffer.ToArray());
+            stopSendingKeys = false;
+        }
+    }
 
+    private void OnApplicationFocus(bool focus)
+    {
+        if (!focus)
+            KeyPressed = 0;
     }
 
     public bool isKeyPressed(Key key)

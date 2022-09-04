@@ -26,10 +26,11 @@ public class P2PNetworkReceive : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        
+    }
 
-        // Check every 0.05 seconds for new packets
-        InvokeRepeating("ReceivePacket", 0f, 0.05f);
+    private void Update()
+    {
+        ReceivePacket();
     }
 
     private void ReceivePacket()
@@ -59,16 +60,19 @@ public class P2PNetworkReceive : MonoBehaviour
             Players[from] = InstantiatePlayer(from);
         } else if (packetType == P2PPacket.PacketType.KeyEvent)
         {
+            // Key frame
+            UInt32 frame = data.PopUInt32();
+
+            if (GameManager.Instance && frame > GameManager.Instance.currentTick)
+            {
+                GameManager.Instance.Rollback((int)frame);
+                Debug.Log("Rollback");
+            }
+
             // Simulate key
             InputManager.Key KeyPressed = data.PopKeyPressed();
             FPSMouvements Mouvements = Players[from].GetComponent<FPSMouvements>();
-            if (InputManager.CompareKey(KeyPressed, InputManager.Key.W) ||
-                InputManager.CompareKey(KeyPressed, InputManager.Key.S) ||
-                InputManager.CompareKey(KeyPressed, InputManager.Key.A) ||
-                InputManager.CompareKey(KeyPressed, InputManager.Key.D))
-            {
-                Mouvements.HandleMouvement();
-            }
+            Mouvements.SetKeyPressed(KeyPressed);
         } else if (packetType == P2PPacket.PacketType.PlayerLeft)
         {
             // Player left
@@ -82,6 +86,11 @@ public class P2PNetworkReceive : MonoBehaviour
             Players[from] = InstantiatePlayer(from);
             Players[from].transform.position = position;
             Players[from].transform.rotation = rotation;
+        } else if (packetType == P2PPacket.PacketType.PlayerRotated)
+        {
+            float mouseX = data.PopFloat();
+            FPSMouvements Mouvements = Players[from].GetComponent<FPSMouvements>();
+            Mouvements.RotatePlayer(mouseX);
         }
     }
 
